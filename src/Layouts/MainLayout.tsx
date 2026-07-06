@@ -1,10 +1,18 @@
 import {Navigate, Outlet} from "react-router";
 import useStore from "../store";
 import Navbar from "../Components/Navbar";
+import {useEffect} from "react";
 
 function MainLayout() {
     const store = useStore();
     const loginToken = store.loginToken;
+    const connectToLogs = store.connectToLogs;
+
+    useEffect(() => {
+        if (loginToken) {
+            connectToLogs();
+        }
+    }, [loginToken, connectToLogs]);
 
     if (!loginToken) {
         return <Navigate to="/login" />

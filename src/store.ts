@@ -2,12 +2,24 @@ import { create } from 'zustand';
 import { baseUrl } from './baseUrl'
 import type { Admin } from './Types/Admin';
 import {jwtDecode} from "jwt-decode";
+import * as signalR from '@microsoft/signalr';
+
+export interface SignalRLog {
+    timestamp: string;
+    level: string;
+    message: string;
+}
 
 interface Store {
     admin: Admin | null;
     loginToken: string | null;
+    logs: SignalRLog[];
+    logConnection: signalR.HubConnection | null;
     login: (username: string, password: string) => Promise<void>;
     logout: () => void;
+    addLog: (log: SignalRLog) => void;
+    connectToLogs: () => Promise<void>;
+    disconnectFromLogs: () => Promise<void>;
 }
 
 interface AdminTokenClaims {
@@ -16,9 +28,11 @@ interface AdminTokenClaims {
     role: string;
 }
 
-const useStore = create<Store>((set) => ({
+const useStore = create<Store>((set, get) => ({
     admin: null,
     loginToken: localStorage.getItem('loginToken') || null,
+    logs: [],
+    logConnection: null,
 
     login: async (username: string, password: string) => {
         const response = await fetch(`${baseUrl}/admin/login`, {
@@ -59,7 +73,60 @@ const useStore = create<Store>((set) => ({
     logout: () => {
         localStorage.removeItem('loginToken');
 
-        set({loginToken: null});
+        get().disconnectFromLogs();
+
+        set({loginToken: null, admin: null});
+    },
+
+    addLog: (log: SignalRLog) => {
+        set((state) => ({
+            logs: [
+                {
+                    timestamp: log.timestamp,
+                    level: log.level || 'Information',
+                    message: log.message || '',
+                },
+                ...state.logs,
+            ].slice(0, 1000),
+        }));
+    },
+
+    connectToLogs: async () => {
+        const existingConnection = get().logConnection;
+
+        if (existingConnection) {
+            return;
+        }
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl(`${baseUrl}/logs/stream`)
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on('ReceiveLog', (log: SignalRLog) => {
+            get().addLog(log);
+        });
+
+        set({logConnection: connection});
+
+        try {
+            await connection.start();
+        } catch {
+            set({logConnection: null});
+        }
+    },
+
+    disconnectFromLogs: async () => {
+        const connection = get().logConnection;
+
+        if (!connection) {
+            return;
+        }
+
+        connection.off('ReceiveLog');
+        await connection.stop();
+
+        set({logConnection: null});
     }
 }))
 

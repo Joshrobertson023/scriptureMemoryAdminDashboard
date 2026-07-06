@@ -6,6 +6,7 @@ import MainLayout from "./Layouts/MainLayout";
 import Syncer from "./Routes/Syncer";
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 import Logout from "./Routes/Logout";
+import Logs from "./Routes/Logs";
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/logout" element={<Logout />} />
           <Route element={<MainLayout />} >
               <Route path="/" element={<Syncer />} />
+              <Route path="/logs" element={<Logs />} />
           </Route>
       </Routes>
   </BrowserRouter>

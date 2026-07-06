@@ -27,6 +27,132 @@
 /*    margin: 0 auto;*/
 /*  }*/
 
+.logs-page {
+    height: 100%;
+    padding: 14px;
+    font-size: 12px;
+}
+
+.logs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+}
+
+.logs-page-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.logs-page-subtitle {
+    margin: 2px 0 0;
+    font-size: 12px;
+}
+
+.logs-count {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.logs-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
+}
+
+.logs-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.logs-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+}
+
+.logs-panel-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.logs-panel-header span {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.logs-table-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.logs-table {
+    font-size: 12px;
+    table-layout: fixed;
+}
+
+.logs-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    font-weight: 600;
+    padding: 6px 8px;
+}
+
+.logs-table tbody td {
+    padding: 5px 8px;
+    vertical-align: top;
+}
+
+.logs-time-col {
+    width: 155px;
+}
+
+.logs-level-col {
+    width: 90px;
+}
+
+.logs-nowrap {
+    white-space: nowrap;
+}
+
+.logs-message {
+    word-break: break-word;
+}
+
+.logs-row-critical td {
+    --bs-table-bg: var(--bs-purple);
+    --bs-table-color: #ffffff;
+    --bs-table-border-color: rgba(255, 255, 255, 0.25);
+    --bs-table-hover-bg: #5a32a3;
+    --bs-table-hover-color: #ffffff;
+}
+
+@media (max-width: 992px) {
+    .logs-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .logs-panel {
+        min-height: 420px;
+    }
+}
+
 /*  .base {*/
 /*    width: 170px;*/
 /*    position: relative;*/
