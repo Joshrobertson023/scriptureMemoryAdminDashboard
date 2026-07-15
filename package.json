@@ -13,6 +13,7 @@
     "@microsoft/signalr": "^10.0.0",
     "@react-navigation/native": "^7.3.7",
     "@tailwindcss/vite": "^4.3.2",
+    "@tanstack/react-table": "^8.21.3",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "jwt-decode": "^4.0.0",

@@ -1,7 +1,12 @@
 export interface Bible {
     id: string;
-    version: string;
+    abbreviation: string;
+    abbreviationLocal: string;
     name: string;
-    lastUpdated?: Date;
-    syncError?: string;
+    nameLocal: string;
+    copyright: string;
+    info: string;
+    active: boolean;
+    nextScheduledAutoSync: Date;
+    lastSync?: Date;
 }

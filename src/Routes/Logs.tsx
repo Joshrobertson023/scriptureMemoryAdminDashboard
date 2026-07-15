@@ -71,7 +71,7 @@ function Logs() {
             <div className="logs-grid">
                 <section className="logs-panel bg-body border">
                     <div className="logs-panel-header bg-body-tertiary border-bottom">
-                        <h2 className="text-body">Information</h2>
+                        <h2 className="text-body">Activity</h2>
                         <span className="text-body-secondary">{informationLogs.length}</span>
                     </div>
 
@@ -80,7 +80,7 @@ function Logs() {
 
                 <section className="logs-panel bg-body border">
                     <div className="logs-panel-header bg-body-tertiary border-bottom">
-                        <h2 className="text-body">Warning</h2>
+                        <h2 className="text-body">Important</h2>
                         <span className="text-body-secondary">{warningLogs.length}</span>
                     </div>
 

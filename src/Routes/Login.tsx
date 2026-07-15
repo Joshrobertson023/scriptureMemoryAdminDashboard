@@ -19,13 +19,13 @@ function Login() {
 
         try {
             await store.login(username.trim(), password.trim());
+            navigate("/");
         } catch (error) {
             setError(error.message);
         } finally {
             setLoading(false);
         }
 
-        navigate("/");
     }
 
     return (
