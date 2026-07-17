@@ -8,7 +8,8 @@ import { BibleDataRow } from "./Types/BibleDataRow";
 import { SyncHistoryRow } from "./Types/SyncHistoryRow";
 import { SyncProgressReport } from "./Types/SyncProgressReport";
 import { BibleSyncStatus } from "./Types/BibleSyncStatus";
-import {getBibleById} from "./Api";
+import {getBibleById, setBibleActive} from "./Api";
+import {BibleDataFetchResult} from "./Types/BibleDataFetchResult";
 
 export interface SignalRLog {
     timestamp: string;
@@ -29,6 +30,7 @@ interface Store {
     disconnectFromLogs: () => Promise<void>;
 
     bibleTableData: BibleDataRow[];
+    fetchBibleSyncData: () => Promise<void>;
     setBibleTableData: (data: BibleDataRow[]) => void;
     updateBibleTableData: (name: string, updates: Partial<Omit<BibleDataRow, 'name'>>) => void;
 
@@ -44,6 +46,9 @@ interface Store {
     syncHistoryDataConnection: signalR.HubConnection | null;
     connectToSyncHistoryData: () => Promise<void>;
     disconnectFromSyncHistoryData: () => Promise<void>;
+
+    settingActive: boolean;
+    setActive: (bibleId: string, active: boolean) => void;
 }
 
 interface AdminTokenClaims {
@@ -260,6 +265,41 @@ const useStore = create<Store>((set, get) => ({
         set({ bibleTableData: data });
     },
 
+    fetchBibleSyncData: async () => {
+        const { loginToken } = get(); // Dynamically grab loginToken from current state
+        if (!loginToken) return;
+
+        try {
+            const result = await fetch(`${baseUrl}/bible/syncer/data`, {
+                headers: {
+                    Authorization: `Bearer ${loginToken}`,
+                },
+            });
+
+            if (!result.ok) {
+                console.error('Error fetching Bible sync data', await result.text());
+                return;
+            }
+
+            const data: BibleDataFetchResult[] = await result.json();
+            const rowData: BibleDataRow[] = data.map((item) => ({
+                id: item.bible.id,
+                abbreviation: item.bible.abbreviationLocal,
+                name: item.bible.nameLocal,
+                status: 0,
+                lastSync: item.bible.lastSync ? item.bible.lastSync : null,
+                nextScheduledSync: item.bible.nextScheduledAutoSync ? item.bible.nextScheduledAutoSync : null,
+                active: item.bible.active,
+                sync: 0,
+            }));
+
+            // Update the store directly
+            set({ bibleTableData: rowData });
+        } catch (error) {
+            console.error(error);
+        }
+    },
+
     updateBibleTableData: (name, updates) => {
         set((state) => ({
             bibleTableData: state.bibleTableData.map((row) =>
@@ -310,7 +350,7 @@ const useStore = create<Store>((set, get) => ({
         });
 
         if (!response.ok) {
-            throw new Error('Unable to fetch sync logs.');
+            throw new Error(response.status.toString());
         }
 
         const data: SyncProgressReport[] = await response.json();
@@ -505,6 +545,34 @@ const useStore = create<Store>((set, get) => ({
 
         set({ syncHistoryDataConnection: null });
     },
+
+    settingActive: false,
+
+    setActive: async (bibleId: string, active: boolean) => {
+        set((state) => ({
+            settingActive: true
+        }));
+
+        try {
+            await setBibleActive(bibleId, active);
+            await get().fetchBibleSyncData();
+
+            set((state) => ({
+                bibleTableData: state.bibleTableData.map((item) =>
+                    item.id === bibleId
+                        ? { ...item, active }
+                        : item
+                )
+            }));
+
+        } catch (error) {
+            console.error(error);
+        } finally {
+            set((state) => ({
+                settingActive: false
+            }))
+        }
+    }
 }));
 
 export default useStore;

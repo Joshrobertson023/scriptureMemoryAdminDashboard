@@ -1,3 +1,15 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+}
 .syncerPage {
     box-sizing: border-box;
     height: 100%;
@@ -65,11 +77,6 @@
 .syncerTable tbody th {
     padding: 4px 10px;
     vertical-align: middle;
-}
-.syncerTable th:not(:last-child),
-.syncerTable td:not(:last-child) {
-    border-right-width: 6px;
-    border-right-color: transparent;
 }
 .syncerTable td {
     white-space: nowrap;

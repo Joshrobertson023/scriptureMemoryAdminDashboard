@@ -1,5 +1,4 @@
-// Syncer.tsx
-import './Syncer.module.css';
+import styles from './Syncer.module.css';
 import {
     createColumnHelper,
     flexRender,
@@ -35,13 +34,14 @@ function shortenBibleName(name: string) {
 
 function Spinner({ label }: { label: string }) {
     return (
-        <div className="spinner-border spinner-border-sm text-secondary syncerSpinner" role="status">
+        <div className={`spinner-border spinner-border-sm text-secondary ${styles.syncerSpinner}`} role="status">
             <span className="visually-hidden">{label}</span>
         </div>
     );
 }
 
 function Syncer() {
+    const settingActive = useStore((state) => state.settingActive);
     const bibleTableData = useStore((state) => state.bibleTableData);
     const syncHistoryData = useStore((state) => state.syncHistoryData);
     const bibleSyncStatuses = useStore((state) => state.bibleSyncStatuses);
@@ -49,10 +49,10 @@ function Syncer() {
     const waitingForCancel = useStore((state) => state.waitingForCancel);
     const queueBibleSync = useStore((state) => state.queueBibleSync);
     const cancelBibleSync = useStore((state) => state.cancelBibleSync);
+    const setActive = useStore((state) => state.setActive);
 
     const handleActiveSwitchChange = (row: BibleDataRow, active: boolean) => {
-        // updateBibleTableData(row.name, { active });
-        console.log(row, active);
+        setActive(row.id, active);
     };
 
     const handleQueueSync = (bibleId: string) => {
@@ -76,7 +76,7 @@ function Syncer() {
             ? <Spinner label="Cancelling..." />
             : (
                 <button
-                    className="btn btn-sm btn-outline-danger syncerCancelButton"
+                    className={`btn btn-sm btn-outline-danger ${styles.syncerCancelButton}`}
                     onClick={() => handleCancelSync(row)}
                 >
                     Cancel
@@ -85,8 +85,8 @@ function Syncer() {
 
         if (syncStatus.state === 'queued') {
             return (
-                <div className="syncerSyncControl">
-                    <span title="Queued" className="syncerQueuedIcon text-secondary">
+                <div className={styles.syncerSyncControl}>
+                    <span title="Queued" className={`${styles.syncerQueuedIcon} text-secondary`}>
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="16"
@@ -105,9 +105,9 @@ function Syncer() {
 
         if (syncStatus.state === 'syncing') {
             return (
-                <div className="syncerSyncControl">
+                <div className={styles.syncerSyncControl}>
                     <div
-                        className="progress syncerProgress"
+                        className={`progress ${styles.syncerProgress}`}
                         role="progressbar"
                         aria-label={`Syncing ${row.name}`}
                         aria-valuenow={syncStatus.percentage}
@@ -129,7 +129,7 @@ function Syncer() {
 
         if (isWaitingForSync) {
             return (
-                <div className="syncerSyncControl">
+                <div className={styles.syncerSyncControl}>
                     <Spinner label="Queuing..." />
                 </div>
             );
@@ -137,7 +137,7 @@ function Syncer() {
 
         return (
             <button
-                className="btn btn-sm btn-secondary syncerSyncButton"
+                className={`btn btn-sm btn-secondary ${styles.syncerSyncButton}`}
                 onClick={() => handleQueueSync(row.id)}
             >
                 Sync
@@ -169,18 +169,18 @@ function Syncer() {
                 );
             },
         }),
-        bibleColumnHelper.accessor('sync', {
-            header: () => <span>Sync</span>,
-            cell: (info) => renderSyncControl(info.row.original),
-        }),
-        bibleColumnHelper.accessor('lastSync', {
-            header: () => <span>Last Sync</span>,
-            cell: (info) => formatDateTime(info.getValue()),
-        }),
-        bibleColumnHelper.accessor('nextScheduledSync', {
-            header: () => <span>Next Scheduled</span>,
-            cell: (info) => formatDateTime(info.getValue()),
-        }),
+        // bibleColumnHelper.accessor('sync', {
+        //     header: () => <span>Sync</span>,
+        //     cell: (info) => renderSyncControl(info.row.original),
+        // }),
+        // bibleColumnHelper.accessor('lastSync', {
+        //     header: () => <span>Last Sync</span>,
+        //     cell: (info) => formatDateTime(info.getValue()),
+        // }),
+        // bibleColumnHelper.accessor('nextScheduledSync', {
+        //     header: () => <span>Next Scheduled</span>,
+        //     cell: (info) => formatDateTime(info.getValue()),
+        // }),
         bibleColumnHelper.accessor('active', {
             header: () => <span>Active</span>,
             cell: (info) => {
@@ -253,126 +253,144 @@ function Syncer() {
     });
 
     return (
-        <div className="syncerPage bg-body text-body">
-            <section className="syncerPanel syncerPanelBibles bg-body border">
-                <div className="syncerPanelHeader bg-body-tertiary border-bottom">
-                    <h3 className="text-body">Bibles</h3>
+        <>
+            {settingActive && (
+                <div className={styles.overlay}>
+                    <div className="spinner-border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
                 </div>
+            )}
+            <div className={`${styles.syncerPage} bg-body text-body`}>
+                <section style={{margin: '15px', display: 'flex', flexDirection: 'row', gap: '15px'}}>
+                    <h6>Last authorization sync: none</h6>
+                    <h6>Live sync: none</h6>
+                    <button type="button" className="btn btn-primary">Start Sync</button>
+                </section>
+                <section className={`${styles.syncerPanel} ${styles.syncerPanelBibles} bg-body border`}>
+                    <div className={`${styles.syncerPanelHeader} bg-body-tertiary border-bottom`}>
+                        <h3 className="text-body">Bibles</h3>
+                    </div>
 
-                <div className="syncerTableWrap">
-                    <table className="table table-sm table-bordered table-hover syncerTable syncerBibleTable mb-0">
-                        <thead>
-                        {bibleTable.getHeaderGroups().map((headerGroup) => (
-                            <tr key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <th key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext(),
-                                            )}
-                                    </th>
-                                ))}
-                            </tr>
-                        ))}
-                        </thead>
-                        <tbody>
-                        {bibleTable.getRowModel().rows.length === 0 && (
-                            <tr>
-                                <td colSpan={bibleColumns.length} className="text-body-secondary text-center py-3">
-                                    <Spinner label="No Bibles Loaded"/>
-                                </td>
-                            </tr>
-                        )}
-
-                        {bibleTable.getRowModel().rows.map((row) => (
-                            <tr key={row.id}>
-                                {row.getVisibleCells().map((cell) => (
-                                    <td key={cell.id}>
-                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <div className={styles.syncerTableWrap}>
+                        <table className={`table table-sm table-bordered table-hover ${styles.syncerTable} ${styles.syncerBibleTable} mb-0`}>
+                            <thead>
+                            {bibleTable.getHeaderGroups().map((headerGroup) => (
+                                <tr key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <th key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext(),
+                                                )}
+                                        </th>
+                                    ))}
+                                </tr>
+                            ))}
+                            </thead>
+                            <tbody>
+                            {bibleTable.getRowModel().rows.length === 0 && (
+                                <tr>
+                                    <td colSpan={bibleColumns.length} className="text-body-secondary text-center py-3">
+                                        <div className="spinner-border" role="status">
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
                                     </td>
-                                ))}
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                                </tr>
+                            )}
 
-                <div className="syncerPagination bg-body-tertiary border-top">
-                    <button
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={() => bibleTable.previousPage()}
-                        disabled={!bibleTable.getCanPreviousPage()}
-                    >
-                        Previous
-                    </button>
+                            {bibleTable.getRowModel().rows.map((row) => (
+                                <tr key={row.id}>
+                                    {row.getVisibleCells().map((cell) => (
+                                        <td key={cell.id}>
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-                    <span className="text-body-secondary">
-                        Page {bibleTable.getState().pagination.pageIndex + 1} of {bibleTable.getPageCount()}
-                    </span>
+                    <div className={`${styles.syncerPagination} bg-body-tertiary border-top`}>
+                        <button
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => bibleTable.previousPage()}
+                            disabled={!bibleTable.getCanPreviousPage()}
+                        >
+                            Previous
+                        </button>
 
-                    <button
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={() => bibleTable.nextPage()}
-                        disabled={!bibleTable.getCanNextPage()}
-                    >
-                        Next
-                    </button>
-                </div>
-            </section>
+                        <span className="text-body-secondary">
+                            Page {bibleTable.getState().pagination.pageIndex + 1} of {bibleTable.getPageCount()}
+                        </span>
 
-            <section className="syncerPanel syncerPanelHistory bg-body border">
-                <div className="syncerPanelHeader bg-body-tertiary border-bottom">
-                    <h3 className="text-body">Sync Logs</h3>
-                </div>
+                        <button
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => bibleTable.nextPage()}
+                            disabled={!bibleTable.getCanNextPage()}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </section>
 
-                <div className="syncerTableWrap logs-table-wrap">
-                    <table className="table table-sm table-bordered table-hover syncerTable logs-table mb-0">
-                        <thead>
-                        {historyTable.getHeaderGroups().map((headerGroup) => (
-                            <tr key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <th key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext(),
-                                            )}
-                                    </th>
-                                ))}
-                            </tr>
-                        ))}
-                        </thead>
-                        <tbody>
-                        {historyTable.getRowModel().rows.length === 0 && (
-                            <tr>
-                                <td colSpan={historyColumns.length} className="text-body-secondary text-center py-3">
-                                    No history logs received.
-                                </td>
-                            </tr>
-                        )}
+                <section className={`${styles.syncerPanel} ${styles.syncerPanelHistory} bg-body border`}>
+                    <div className={`${styles.syncerPanelHeader} bg-body-tertiary border-bottom`}>
+                        <h3 className="text-body">Sync Logs</h3>
+                    </div>
 
-                        {historyTable.getRowModel().rows.map((row) => (
-                            <tr key={row.original.id}>
-                                {row.getVisibleCells().map((cell) => (
-                                    <td
-                                        key={cell.id}
-                                        className={cell.column.id === 'message' || cell.column.id === 'error'
-                                            ? 'logs-message'
-                                            : 'logs-nowrap'}
-                                    >
-                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <div className={`${styles.syncerTableWrap} logs-table-wrap`}>
+                        <table className={`table table-sm table-bordered table-hover ${styles.syncerTable} logs-table mb-0`}>
+                            <thead>
+                            {historyTable.getHeaderGroups().map((headerGroup) => (
+                                <tr key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <th key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                    header.column.columnDef.header,
+                                                    header.getContext(),
+                                                )}
+                                        </th>
+                                    ))}
+                                </tr>
+                            ))}
+                            </thead>
+                            <tbody>
+                            {historyTable.getRowModel().rows.length === 0 && (
+                                <tr>
+                                    <td colSpan={historyColumns.length} className="text-body-secondary text-center py-3">
+                                        <div className="spinner-border" role="status">
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
                                     </td>
-                                ))}
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
+                                </tr>
+                            )}
+
+                            {historyTable.getRowModel().rows.map((row) => (
+                                <tr key={row.original.id}>
+                                    {row.getVisibleCells().map((cell) => (
+                                        <td
+                                            key={cell.id}
+                                            className={cell.column.id === 'message' || cell.column.id === 'error'
+                                                ? 'logs-message'
+                                                : 'logs-nowrap'}
+                                        >
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </>
     );
 }
 
