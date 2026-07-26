@@ -9,6 +9,7 @@ import { SyncHistoryRow } from "./Types/SyncHistoryRow";
 import { SyncProgressReport } from "./Types/SyncProgressReport";
 import { BibleSyncStatus } from "./Types/BibleSyncStatus";
 import {getBibleById, setBibleActive} from "./Api";
+import {Bible} from "./Types/Bible";
 import {BibleDataFetchResult} from "./Types/BibleDataFetchResult";
 
 export interface SignalRLog {
@@ -33,6 +34,10 @@ interface Store {
     fetchBibleSyncData: () => Promise<void>;
     setBibleTableData: (data: BibleDataRow[]) => void;
     updateBibleTableData: (name: string, updates: Partial<Omit<BibleDataRow, 'name'>>) => void;
+
+    lastAuthorizationSync: string | null;
+    authorizationSyncInProgress: boolean;
+    startAuthorizationSync: () => Promise<void>;
 
     syncHistoryData: SyncHistoryRow[];
     bibleSyncStatuses: Record<string, BibleSyncStatus>;
@@ -143,6 +148,19 @@ const historyRowKey = (row: SyncHistoryRow) =>
     row.id > 0
         ? row.id.toString()
         : `${row.bibleId}-${row.timestamp}-${row.action}-${crypto.randomUUID()}`;
+
+// Maps a raw Bible object (from either /bible/syncer/data's syncData[].bible
+// or /bible/authorization-sync's response array) onto a BibleDataRow.
+const bibleToRow = (bible: Bible): BibleDataRow => ({
+    id: bible.id,
+    abbreviation: bible.abbreviationLocal,
+    name: bible.nameLocal,
+    status: 0,
+    lastSync: bible.lastSync ? bible.lastSync : null,
+    nextScheduledSync: bible.nextScheduledAutoSync ? bible.nextScheduledAutoSync : null,
+    active: bible.active,
+    sync: 0,
+});
 
 const useStore = create<Store>((set, get) => ({
     admin: getInitialAdmin(),
@@ -265,8 +283,11 @@ const useStore = create<Store>((set, get) => ({
         set({ bibleTableData: data });
     },
 
+    lastAuthorizationSync: null,
+    authorizationSyncInProgress: false,
+
     fetchBibleSyncData: async () => {
-        const { loginToken } = get(); // Dynamically grab loginToken from current state
+        const { loginToken } = get();
         if (!loginToken) return;
 
         try {
@@ -281,22 +302,55 @@ const useStore = create<Store>((set, get) => ({
                 return;
             }
 
-            const data: BibleDataFetchResult[] = await result.json();
-            const rowData: BibleDataRow[] = data.map((item) => ({
-                id: item.bible.id,
-                abbreviation: item.bible.abbreviationLocal,
-                name: item.bible.nameLocal,
-                status: 0,
-                lastSync: item.bible.lastSync ? item.bible.lastSync : null,
-                nextScheduledSync: item.bible.nextScheduledAutoSync ? item.bible.nextScheduledAutoSync : null,
-                active: item.bible.active,
-                sync: 0,
-            }));
+            const data: BibleDataFetchResult = await result.json();
+            const rowData: BibleDataRow[] = data.syncData.map((item) => bibleToRow(item.bible));
 
-            // Update the store directly
-            set({ bibleTableData: rowData });
+            set({
+                bibleTableData: rowData,
+                lastAuthorizationSync: data.lastSync,
+                authorizationSyncInProgress: data.currentlySyncing,
+            });
         } catch (error) {
             console.error(error);
+        }
+    },
+
+    // Kicks off /bible/authorization-sync, which the backend runs
+    // synchronously and only responds once the sync is complete. We flip
+    // authorizationSyncInProgress for the button spinner and swap in the
+    // fresh bible list (and sync timestamp) once the response lands.
+    startAuthorizationSync: async () => {
+        const loginToken = get().loginToken;
+        const username = get().admin?.username;
+
+        if (!loginToken || !username) {
+            throw new Error('You must be logged in to start a sync.');
+        }
+
+        set({ authorizationSyncInProgress: true });
+
+        try {
+            const response = await fetch(`${baseUrl}/bible/authorization-sync`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${loginToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(username),
+            });
+
+            if (!response.ok) {
+                throw new Error('Unable to start authorization sync.');
+            }
+
+            const bibles: Bible[] = await response.json();
+
+            set({
+                bibleTableData: bibles.map(bibleToRow),
+                lastAuthorizationSync: new Date().toISOString(),
+            });
+        } finally {
+            set({ authorizationSyncInProgress: false });
         }
     },
 

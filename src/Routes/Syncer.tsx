@@ -50,6 +50,9 @@ function Syncer() {
     const queueBibleSync = useStore((state) => state.queueBibleSync);
     const cancelBibleSync = useStore((state) => state.cancelBibleSync);
     const setActive = useStore((state) => state.setActive);
+    const lastAuthorizationSync = useStore((state) => state.lastAuthorizationSync);
+    const authorizationSyncInProgress = useStore((state) => state.authorizationSyncInProgress);
+    const startAuthorizationSync = useStore((state) => state.startAuthorizationSync);
 
     const handleActiveSwitchChange = (row: BibleDataRow, active: boolean) => {
         setActive(row.id, active);
@@ -63,6 +66,12 @@ function Syncer() {
 
     const handleCancelSync = (row: BibleDataRow) => {
         cancelBibleSync(row.id, row.name).catch((error) => {
+            console.error(error);
+        });
+    };
+
+    const handleStartAuthorizationSync = () => {
+        startAuthorizationSync().catch((error) => {
             console.error(error);
         });
     };
@@ -262,10 +271,29 @@ function Syncer() {
                 </div>
             )}
             <div className={`${styles.syncerPage} bg-body text-body`}>
-                <section style={{margin: '15px', display: 'flex', flexDirection: 'row', gap: '15px'}}>
-                    <h6>Last authorization sync: none</h6>
-                    <h6>Live sync: none</h6>
-                    <button type="button" className="btn btn-primary">Start Sync</button>
+                <section style={{margin: '15px', display: 'flex', flexDirection: 'row', gap: '15px', alignItems: 'center'}}>
+                    <h6 className="mb-0">
+                        Last authorization sync: {lastAuthorizationSync ? formatDateTime(lastAuthorizationSync) : 'none'}
+                    </h6>
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleStartAuthorizationSync}
+                        disabled={authorizationSyncInProgress}
+                    >
+                        {authorizationSyncInProgress ? (
+                            <>
+                                <span
+                                    className="spinner-border spinner-border-sm me-2"
+                                    role="status"
+                                    aria-hidden="true"
+                                ></span>
+                                Syncing...
+                            </>
+                        ) : (
+                            'Start Sync'
+                        )}
+                    </button>
                 </section>
                 <section className={`${styles.syncerPanel} ${styles.syncerPanelBibles} bg-body border`}>
                     <div className={`${styles.syncerPanelHeader} bg-body-tertiary border-bottom`}>

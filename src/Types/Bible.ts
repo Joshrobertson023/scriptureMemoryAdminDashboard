@@ -4,9 +4,10 @@ export interface Bible {
     abbreviationLocal: string;
     name: string;
     nameLocal: string;
-    copyright: string;
+    copyright: string | null;
     info: string;
     active: boolean;
-    nextScheduledAutoSync: Date;
-    lastSync?: Date;
+    authorized: boolean;
+    nextScheduledAutoSync: Date | null;
+    lastSync?: Date | null;
 }

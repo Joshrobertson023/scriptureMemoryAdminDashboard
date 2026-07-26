@@ -1,6 +1,14 @@
-import {Bible} from "./Bible";
+import { Bible } from "./Bible";
+import { SyncProgressReport } from "./SyncProgressReport";
+
+export interface BibleSyncDataItem {
+    bible: Bible;
+    lastSyncReport: SyncProgressReport | null;
+    syncInProgress: boolean;
+}
 
 export interface BibleDataFetchResult {
-    bible: Bible;
-    lastSyncReport?: Date | null;
+    currentlySyncing: boolean;
+    lastSync: string | null;
+    syncData: BibleSyncDataItem[];
 }
